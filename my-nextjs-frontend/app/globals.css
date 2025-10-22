@@ -1,0 +1,21 @@
+:root {
+  --background: #121212;
+  /* A deep, near-black for the main background */
+  --foreground: #EAEAEA;
+  /* A light grey for high-contrast text */
+  --container-bg: #1C1C1E;
+  /* A slightly lighter shade for containers, common in iOS */
+  --border-color: #38383A;
+  /* Subtle border color */
+  --primary-blue: #0A84FF;
+  /* Apple's vibrant blue for interactive elements */
+  --primary-blue-hover: #3399FF;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}

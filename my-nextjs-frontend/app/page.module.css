@@ -1,0 +1,165 @@
+/* my-nextjs-frontend/app/page.module.css */
+.main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem;
+    min-height: 100vh;
+    background-color: var(--background);
+}
+
+.container {
+    width: 100%;
+    max-width: 900px;
+    background: var(--container-bg);
+    padding: 2.5rem;
+    border-radius: 16px;
+    /* Slightly larger radius for a modern feel */
+    border: 1px solid var(--border-color);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.title {
+    color: var(--foreground);
+    text-align: center;
+    margin-bottom: 0.5rem;
+    font-size: 2.5rem;
+    font-weight: 600;
+}
+
+.description {
+    text-align: center;
+    color: #8D8D92;
+    /* A softer grey for secondary text */
+    margin-bottom: 2.5rem;
+    font-size: 1.1rem;
+    line-height: 1.6;
+}
+
+.tradeButton {
+    display: block;
+    width: 100%;
+    padding: 1rem;
+    font-size: 1.2rem;
+    font-weight: 600;
+    /* Bold font for a strong call to action */
+    color: #fff;
+    background-color: var(--primary-blue);
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.tradeButton:disabled {
+    background: #555;
+    color: #999;
+    cursor: not-allowed;
+}
+
+.tradeButton:hover:not(:disabled) {
+    background-color: var(--primary-blue-hover);
+    transform: translateY(-2px);
+    /* Subtle lift effect */
+}
+
+.resultsContainer {
+    margin-top: 2.5rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.resultsContainer h2 {
+    font-size: 1.5rem;
+    color: var(--foreground);
+    margin-bottom: 1rem;
+    border-bottom: 2px solid var(--primary-blue);
+    padding-bottom: 0.5rem;
+    display: inline-block;
+}
+
+.codeBlock {
+    background: #101010;
+    /* Darker background for code blocks */
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1rem;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    color: #d4d4d4;
+    /* High contrast text for code */
+    font-family: var(--font-geist-mono), Menlo, monospace;
+    font-size: 0.95rem;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+    /* Ensures border-radius is respected */
+}
+
+.table th,
+.table td {
+    border-bottom: 1px solid var(--border-color);
+    padding: 14px;
+    text-align: left;
+}
+
+.table th {
+    background-color: #2c2c2e;
+    /* Header background for tables */
+    font-weight: 600;
+    color: var(--foreground);
+}
+
+.table tr:last-child td {
+    border-bottom: none;
+    /* Remove border for the last row */
+}
+
+.error {
+    color: #FF6B6B;
+    /* A bright, clear red for errors */
+    background-color: rgba(255, 107, 107, 0.1);
+    border: 1px solid #FF6B6B;
+    border-radius: 8px;
+    margin-top: 1.5rem;
+    padding: 1rem;
+    text-align: left;
+}
+
+.error pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-family: var(--font-geist-mono), Menlo, monospace;
+}
+
+.portfolioList {
+    list-style-type: none;
+    padding: 0;
+    background: #2c2c2e;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1.5rem;
+}
+
+.portfolioList li {
+    margin-bottom: 0.75rem;
+    font-size: 1rem;
+    display: flex;
+    justify-content: space-between;
+}
+
+.portfolioList li:last-child {
+    margin-bottom: 0;
+}
+
+.portfolioList li strong {
+    color: #a0a0a0;
+    /* Key is slightly dimmer than the value */
+    margin-right: 1rem;
+}

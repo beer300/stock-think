@@ -1,5 +1,7 @@
+Flask
+Flask-CORS
+python-dotenv
 ccxt
 pandas
 ta
-python-dotenv
-deepseek
+requests
