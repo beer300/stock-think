@@ -1,7 +1,7 @@
 // my-nextjs-frontend/app/page.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import styles from './page.module.css';
 
 // --- Import charting components ---
@@ -42,7 +42,7 @@ interface HistoryPoint {
 }
 
 
-// --- Reusable Chart Component with professional styling ---
+// --- Reusable Chart Component (remains the same) ---
 function PortfolioChart({ data }: { data: HistoryPoint[] }) {
 
   // Create a gradient for the chart background
@@ -63,8 +63,7 @@ function PortfolioChart({ data }: { data: HistoryPoint[] }) {
         if (!ctx) return 'rgba(75, 192, 192, 0.2)';
         return createGradient(ctx);
       },
-      borderColor: 'rgb(10, 132, 255)', // A single, vibrant color for the border
-      // --- DYNAMIC LINE COLORING ---
+      borderColor: 'rgb(10, 132, 255)',
       segment: {
         borderColor: (ctx: any) => {
           const y1 = ctx.p0.parsed.y;
@@ -130,16 +129,12 @@ function PortfolioChart({ data }: { data: HistoryPoint[] }) {
         },
         grid: {
           color: 'rgba(255, 255, 255, 0.1)',
-          zeroLineColor: 'rgba(255, 255, 255, 0.5)', // Make zero line more prominent
+          zeroLineColor: 'rgba(255, 255, 255, 0.5)',
         },
         ticks: {
           color: 'var(--foreground)',
           callback: (value: string | number) => '$' + value
         },
-        // IMPORTANT: The chart will automatically handle negative values
-        // as long as you don't set a `min: 0`. The configuration is correct
-        // by default. If you see no negative values, it's because your
-        // data source hasn't provided any yet.
       },
     },
   };
@@ -155,7 +150,7 @@ export default function Home() {
   const [portfolioSummary, setPortfolioSummary] = useState<PortfolioSummary | null>(null);
   const [portfolioPositions, setPortfolioPositions] = useState<Position[]>([]);
   const [history, setHistory] = useState<HistoryPoint[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true); // Start loading on initial page load
   const [error, setError] = useState<string | null>(null);
 
   const parseOutput = (output: string) => {
@@ -173,7 +168,7 @@ export default function Home() {
     }
   };
 
-  const handleTrade = async () => {
+  const handleTrade = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -188,7 +183,15 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    handleTrade();
+    const FOUR_MINUTES_IN_MS = 4 * 60 * 1000;
+    const intervalId = setInterval(handleTrade, FOUR_MINUTES_IN_MS);
+    return () => clearInterval(intervalId);
+  }, [handleTrade]);
+
 
   const getPnlClass = (pnl: string) => {
     const value = parseFloat(pnl.replace(/[^-\d.]/g, ''));
@@ -202,34 +205,45 @@ export default function Home() {
       <div className={styles.container}>
         <h1 className={styles.title}>AI Trading Assistant</h1>
         <p className={styles.description}>
-          Click the button to run the AI trading logic. Portfolio state and history are saved between runs.
+          The AI trading logic automatically runs every 4 minutes. Portfolio state and history are saved between runs.
+          {loading && <strong> (New cycle in progress...)</strong>}
         </p>
-        <button onClick={handleTrade} disabled={loading} className={styles.tradeButton}>
-          {loading ? 'Processing...' : 'Execute Next Trade Cycle'}
-        </button>
 
         {error && <div className={styles.error}><pre>Error: {error}</pre></div>}
 
-        {/* --- NEW DASHBOARD LAYOUT --- */}
         <div className={styles.dashboardLayout}>
 
-          {/* --- MAIN CONTENT (GRAPH) --- */}
+          {/* ---vvv--- MODIFIED: MAIN CONTENT LOGIC ---vvv--- */}
+          {/* This new logic ensures the chart remains visible during subsequent loading states */}
           <div className={styles.mainContent}>
-            {loading && <p className={styles.loadingText}>Fetching market data and thinking...</p>}
-            {!loading && !error && history.length > 1 && (
-              <div className={styles.chartContainer}>
+            <div className={styles.chartContainer}>
+              {/* Condition 1: If there is enough data for a line graph, ALWAYS show the chart. */}
+              {/* It will stay on screen even when loading is true on subsequent runs. */}
+              {history.length > 1 && (
                 <PortfolioChart data={history} />
-              </div>
-            )}
-            {!loading && history.length <= 1 && (
-              <div className={styles.chartContainer} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <p>Run a trade cycle to generate portfolio history.</p>
-              </div>
-            )}
+              )}
+
+              {/* Condition 2: If it's the INITIAL load and we have no data, show this message. */}
+              {loading && history.length <= 1 && (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                  <p>Running first analysis cycle...</p>
+                </div>
+              )}
+
+              {/* Condition 3: If it's NOT loading but we still don't have enough data, show this message. */}
+              {!loading && history.length <= 1 && (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                  <p>Waiting for the next trade cycle to generate more portfolio history.</p>
+                </div>
+              )}
+            </div>
           </div>
+          {/* ---^^^---------------------------------------^^^--- */}
+
 
           {/* --- SIDEBAR (TABLES AND REASONING) --- */}
-          {!loading && !error && (
+          {/* Hide sidebar during initial load for a cleaner first impression */}
+          {(!loading || history.length > 0) && !error && (
             <div className={styles.sidebar}>
               {portfolioSummary && Object.keys(portfolioSummary).length > 0 && (
                 <div className={styles.resultsContainer}>
