@@ -6,177 +6,102 @@ import styles from './page.module.css';
 
 // --- Import charting components ---
 import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  TimeScale, // Use TimeScale for accurate time-based charts
-  Filler,   // Import Filler for gradient fills
+  Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, TimeScale, Filler,
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
-import 'chartjs-adapter-date-fns'; // Adapter for time scale functionality
+import 'chartjs-adapter-date-fns';
 
-// --- Register Chart.js components we will use ---
+// --- Register Chart.js components ---
 ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  TimeScale, // Register the time scale
-  Filler    // Register the filler plugin
+  CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, TimeScale, Filler
 );
 
-
 // --- TYPE DEFINITIONS ---
-// Defines the structure for a single trading decision
 interface Decision {
   symbol: string;
   action: string;
   confidence: string;
-  quantity: string;
+  quantity: number | string;
+  exit_plan: string;
 }
 
-// Defines the structure for the portfolio details (string keys, string values)
-type Portfolio = Record<string, string>;
+interface Position {
+  side: string;
+  coin: string;
+  leverage: string;
+  notional: string;
+  unreal_pnl: string;
+  exit_plan: string;
+}
 
-// Defines the structure for a single historical data point for the chart
+type PortfolioSummary = Record<string, string>;
+
 interface HistoryPoint {
-  timestamp: string; // ISO 8601 format string (e.g., "2023-10-27T10:00:00Z")
+  timestamp: string;
   value: number;
 }
-
 
 // --- Reusable Chart Component ---
 function PortfolioChart({ data }: { data: HistoryPoint[] }) {
   const chartData = {
-    // Labels are not needed when using a time scale with {x, y} data points
-    datasets: [
-      {
-        fill: true, // Enable the gradient fill
-        label: 'Portfolio Value ($)',
-        data: data.map(point => ({ x: new Date(point.timestamp), y: point.value })), // Convert timestamp string to Date object
-        borderColor: 'rgb(75, 192, 192)',
-        backgroundColor: 'rgba(75, 192, 192, 0.2)', // Fallback color
-        tension: 0.1,
-      },
-    ],
+    datasets: [{
+      fill: true,
+      label: 'Portfolio Value ($)',
+      data: data.map(point => ({ x: new Date(point.timestamp), y: point.value })),
+      borderColor: 'rgb(75, 192, 192)',
+      backgroundColor: 'rgba(75, 192, 192, 0.2)',
+      tension: 0.1,
+    }],
   };
-
   const options = {
     responsive: true,
-    maintainAspectRatio: false, // Allows chart to fill container height
+    maintainAspectRatio: false,
     plugins: {
-      legend: {
-        position: 'top' as const,
-      },
-      title: {
-        display: true,
-        text: 'Portfolio Value Over Time',
-        font: { size: 18 }
-      },
+      legend: { position: 'top' as const },
+      title: { display: true, text: 'Portfolio Value Over Time', font: { size: 18 } },
     },
     scales: {
       x: {
-        type: 'time' as const, // Set the x-axis to a time scale
-        time: {
-          tooltipFormat: 'MMM dd, yyyy HH:mm', // Format for tooltips
-          unit: 'minute' as const, // Dynamically set this based on data span for better results
-        },
-        title: {
-          display: true,
-          text: 'Date'
-        },
-        grid: {
-          display: false, // Cleaner look
-        }
+        type: 'time' as const,
+        time: { tooltipFormat: 'MMM dd, yyyy HH:mm', unit: 'minute' as const },
+        title: { display: true, text: 'Date' },
+        grid: { display: false },
       },
       y: {
-        title: {
-          display: true,
-          text: 'Value ($)'
-        },
-        ticks: {
-          // Format ticks to include a dollar sign
-          callback: function (value: string | number) {
-            return '$' + value;
-          }
-        }
-      }
-    }
+        title: { display: true, text: 'Value ($)' },
+        ticks: { callback: (value: string | number) => '$' + value },
+      },
+    },
   };
-
   return <Line options={options} data={chartData} />;
 }
 
-
-// --- THE MAIN PAGE COMPONENT ---
+// --- MAIN PAGE COMPONENT ---
 export default function Home() {
-  // --- STATE MANAGEMENT ---
   const [reasoning, setReasoning] = useState<string>('');
-  const [summary, setSummary] = useState<string>('');
   const [decisions, setDecisions] = useState<Decision[]>([]);
-  const [portfolio, setPortfolio] = useState<Portfolio | null>(null);
+  const [portfolioSummary, setPortfolioSummary] = useState<PortfolioSummary | null>(null);
+  const [portfolioPositions, setPortfolioPositions] = useState<Position[]>([]);
   const [history, setHistory] = useState<HistoryPoint[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  /**
-   * Parses the raw string output from the Python script to populate all component states.
-   * @param output The raw string response from the backend.
-   */
   const parseOutput = (output: string) => {
-    // Reset states to avoid showing stale data from previous runs
-    setReasoning(''); setSummary(''); setDecisions([]); setPortfolio(null); setHistory([]);
-
-    const reasoningMatch = output.match(/<thinking>([\s\S]*?)<\/thinking>/);
-    setReasoning(reasoningMatch ? reasoningMatch[1].trim() : 'No reasoning block found.');
-    const decisionText = reasoningMatch ? output.substring(output.indexOf('</thinking>') + 11).trim() : output;
-    const lines = decisionText.split('\n').filter(line => line.trim() !== '');
-
-    // --- Parse Summary and Decisions ---
-    const decisionsHeaderIndex = lines.findIndex(line => line.includes('--- FINAL DECISIONS ---'));
-    if (decisionsHeaderIndex !== -1) {
-      // Logic to parse summary and decisions table
-    }
-
-    // --- Parse Final Portfolio Status ---
-    const portfolioHeaderIndex = lines.findIndex(line => line.includes('5. Final Portfolio Status...'));
-    if (portfolioHeaderIndex !== -1) {
-      const portfolioDetails: Portfolio = {};
-      for (let i = portfolioHeaderIndex + 1; i < lines.length && !lines[i].includes('---'); i++) {
-        const [key, ...valueParts] = lines[i].split(':');
-        if (key && valueParts.length > 0) {
-          portfolioDetails[key.trim()] = valueParts.join(':').trim();
-        }
-      }
-      setPortfolio(portfolioDetails);
-    }
-
-    // --- Parse Portfolio History ---
-    const historyHeaderIndex = lines.findIndex(line => line.includes('--- PORTFOLIO HISTORY ---'));
-    if (historyHeaderIndex !== -1 && lines[historyHeaderIndex + 1]) {
-      try {
-        const historyJsonString = lines[historyHeaderIndex + 1];
-        const historyData: HistoryPoint[] = JSON.parse(historyJsonString);
-        if (Array.isArray(historyData)) {
-          setHistory(historyData);
-        }
-      } catch (e) {
-        console.error("Failed to parse portfolio history JSON:", e);
-      }
+    try {
+      const data = JSON.parse(output);
+      setReasoning(data.reasoning || 'No reasoning provided.');
+      setDecisions(data.decisions || []);
+      setPortfolioSummary(data.portfolio_summary || null);
+      setPortfolioPositions(data.portfolio_positions || []);
+      setHistory(data.history || []);
+    } catch (e) {
+      console.error("Failed to parse JSON output from backend:", e);
+      setError("Failed to parse the data from the AI. The output might be malformed.");
+      // Clear old data to avoid confusion
+      setReasoning(''); setDecisions([]); setPortfolioSummary(null); setPortfolioPositions([]); setHistory([]);
     }
   };
 
-  /**
-   * Handles the button click to trigger the trading process via the API.
-   */
   const handleTrade = async () => {
     setLoading(true);
     setError(null);
@@ -184,7 +109,7 @@ export default function Home() {
       const response = await fetch('/api/trade', { method: 'POST' });
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch trading decision from the server.');
+        throw new Error(data.error || 'Failed to fetch trading decision.');
       }
       parseOutput(data.output);
     } catch (err: unknown) {
@@ -194,38 +119,73 @@ export default function Home() {
     }
   };
 
+  // Helper to determine P&L color
+  const getPnlClass = (pnl: string) => {
+    const value = parseFloat(pnl.replace(/[^-\d.]/g, ''));
+    if (value > 0) return styles.pnlPositive;
+    if (value < 0) return styles.pnlNegative;
+    return '';
+  };
+
   return (
     <main className={styles.main}>
       <div className={styles.container}>
         <h1 className={styles.title}>AI Trading Assistant</h1>
         <p className={styles.description}>
-          Click the button to run the AI trading logic. The portfolio state and value history are saved and loaded between runs.
+          Click the button to run the AI trading logic. Portfolio state and history are saved between runs.
         </p>
-
         <button onClick={handleTrade} disabled={loading} className={styles.tradeButton}>
           {loading ? 'Processing...' : 'Execute Next Trade Cycle'}
         </button>
-
         {loading && <p className={styles.loadingText}>Fetching market data and thinking...</p>}
         {error && <div className={styles.error}><pre>Error: {error}</pre></div>}
-
         {!loading && !error && (
           <>
-            {/* --- Render the chart if there's enough data (at least 2 points) --- */}
             {history.length > 1 && (
               <div className={styles.chartContainer}>
                 <PortfolioChart data={history} />
               </div>
             )}
 
-            {portfolio && Object.keys(portfolio).length > 0 && (
+            {portfolioSummary && Object.keys(portfolioSummary).length > 0 && (
               <div className={styles.resultsContainer}>
-                <h2>Current Portfolio Status</h2>
+                <h2>Portfolio Summary</h2>
                 <ul className={styles.portfolioList}>
-                  {Object.entries(portfolio).map(([key, value]) => (
+                  {Object.entries(portfolioSummary).map(([key, value]) => (
                     <li key={key}><strong>{key}:</strong> {value}</li>
                   ))}
                 </ul>
+              </div>
+            )}
+
+            {/* NEW: Detailed Portfolio Positions Table */}
+            {portfolioPositions.length > 0 && (
+              <div className={styles.resultsContainer}>
+                <h2>Current Positions</h2>
+                <table className={styles.table}>
+                  <thead>
+                    <tr>
+                      <th>SIDE</th>
+                      <th>COIN</th>
+                      <th>LEVERAGE</th>
+                      <th>NOTIONAL</th>
+                      <th>EXIT PLAN</th>
+                      <th>UNREAL P&L</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {portfolioPositions.map((pos, index) => (
+                      <tr key={index}>
+                        <td>{pos.side}</td>
+                        <td>{pos.coin}</td>
+                        <td>{pos.leverage}</td>
+                        <td>{pos.notional}</td>
+                        <td>{pos.exit_plan}</td>
+                        <td className={getPnlClass(pos.unreal_pnl)}>{pos.unreal_pnl}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
 
@@ -233,7 +193,26 @@ export default function Home() {
               <div className={styles.resultsContainer}>
                 <h2>AI Decisions for this Cycle</h2>
                 <table className={styles.table}>
-                  {/* ... table rendering ... */}
+                  <thead>
+                    <tr>
+                      <th>SYMBOL</th>
+                      <th>ACTION</th>
+                      <th>CONFIDENCE</th>
+                      <th>QUANTITY</th>
+                      <th>EXIT PLAN</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {decisions.map((d, index) => (
+                      <tr key={index}>
+                        <td>{d.symbol}</td>
+                        <td>{d.action}</td>
+                        <td>{d.confidence}</td>
+                        <td>{d.quantity}</td>
+                        <td>{d.exit_plan}</td>
+                      </tr>
+                    ))}
+                  </tbody>
                 </table>
               </div>
             )}

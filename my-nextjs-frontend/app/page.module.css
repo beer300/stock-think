@@ -163,3 +163,45 @@
     /* Key is slightly dimmer than the value */
     margin-right: 1rem;
 }
+
+/* Add to the bottom of my-nextjs-frontend/app/page.module.css */
+
+.pnlPositive {
+    color: #26a69a;
+    /* Green for profit */
+}
+
+.pnlNegative {
+    color: #ef5350;
+    /* Red for loss */
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    background-color: #2a2a2e;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.table th,
+.table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #3a3a3e;
+}
+
+.table th {
+    background-color: #38383e;
+    font-weight: 600;
+    color: #e0e0e0;
+}
+
+.table tr:last-child td {
+    border-bottom: none;
+}
+
+.table tbody tr:hover {
+    background-color: #3c3c40;
+}
