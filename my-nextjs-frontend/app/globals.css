@@ -1,21 +1,121 @@
+/* Import the Geist Sans and Mono fonts for a clean, modern UI */
+@import url('https://assets.vercel.com/raw/upload/v1587415301/fonts/2/Geist-Regular.woff2');
+@import url('https://assets.vercel.com/raw/upload/v1587415301/fonts/2/Geist-Medium.woff2');
+@import url('https://assets.vercel.com/raw/upload/v1587415301/fonts/2/Geist-Bold.woff2');
+@import url('https://assets.vercel.com/raw/upload/v1587415301/fonts/2/GeistMono-Regular.woff2');
+
 :root {
+  /* Font Families */
+  --font-geist-sans: 'Geist', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-geist-mono: 'Geist Mono', Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
+  /* Primary Theme Colors */
   --background: #121212;
-  /* A deep, near-black for the main background */
   --foreground: #EAEAEA;
-  /* A light grey for high-contrast text */
   --container-bg: #1C1C1E;
-  /* A slightly lighter shade for containers, common in iOS */
   --border-color: #38383A;
-  /* Subtle border color */
+
+  /* Interactive & Accent Colors */
   --primary-blue: #0A84FF;
-  /* Apple's vibrant blue for interactive elements */
   --primary-blue-hover: #3399FF;
+  --primary-blue-rgb: 10, 132, 255;
+  /* For use with opacity */
+
+  /* Semantic Colors (Essential for Dashboards) */
+  --success: #26a69a;
+  /* Green for profit, positive changes */
+  --danger: #ef5350;
+  /* Red for loss, errors */
+  --warning: #facc15;
+  /* Yellow for warnings or neutral states */
+  --success-rgb: 38, 166, 154;
+  --danger-rgb: 239, 83, 80;
+
+  /* Neutral Grays */
+  --gray-100: #1C1C1E;
+  /* Same as container-bg */
+  --gray-200: #2c2c2e;
+  /* For table headers, subtle backgrounds */
+  --gray-300: #3a3a3e;
+  /* For borders, dividers */
+  --gray-400: #8D8D92;
+  /* For secondary text, descriptions */
+
+  /* Sizing & Radius */
+  --border-radius-sm: 6px;
+  --border-radius-md: 10px;
+  --border-radius-lg: 16px;
 }
 
+/* 1. Modern CSS Reset */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+/* 2. Global Styles */
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family: var(--font-geist-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  line-height: 1.6;
+}
+
+/* 3. Typography Defaults */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  color: var(--foreground);
+  font-weight: 600;
+  text-wrap: balance;
+  /* Improves heading wrapping */
+}
+
+p {
+  color: var(--gray-400);
+  margin-bottom: 1rem;
+}
+
+a {
+  color: var(--primary-blue);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+a:hover {
+  text-decoration: underline;
+  color: var(--primary-blue-hover);
+}
+
+/* 4. Custom Dark-Themed Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--gray-300);
+  border-radius: 20px;
+  border: 3px solid var(--background);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--gray-400);
 }

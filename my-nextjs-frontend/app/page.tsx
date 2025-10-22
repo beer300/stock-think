@@ -6,7 +6,7 @@ import styles from './page.module.css';
 
 // --- Import charting components ---
 import {
-  Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, TimeScale, Filler,
+  Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, TimeScale, Filler, ScriptableContext
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 import 'chartjs-adapter-date-fns';
@@ -16,7 +16,7 @@ ChartJS.register(
   CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, TimeScale, Filler
 );
 
-// --- TYPE DEFINITIONS ---
+// --- TYPE DEFINITIONS (remain the same) ---
 interface Decision {
   symbol: string;
   action: string;
@@ -41,40 +41,112 @@ interface HistoryPoint {
   value: number;
 }
 
-// --- Reusable Chart Component ---
+
+// --- Reusable Chart Component with professional styling ---
 function PortfolioChart({ data }: { data: HistoryPoint[] }) {
+
+  // Create a gradient for the chart background
+  const createGradient = (ctx: CanvasRenderingContext2D) => {
+    const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+    gradient.addColorStop(0, 'rgba(10, 132, 255, 0.4)'); // Primary blue with opacity
+    gradient.addColorStop(1, 'rgba(10, 132, 255, 0)');
+    return gradient;
+  };
+
   const chartData = {
     datasets: [{
-      fill: true,
       label: 'Portfolio Value ($)',
       data: data.map(point => ({ x: new Date(point.timestamp), y: point.value })),
-      borderColor: 'rgb(75, 192, 192)',
-      backgroundColor: 'rgba(75, 192, 192, 0.2)',
+      fill: true,
+      backgroundColor: (context: ScriptableContext<"line">) => {
+        const ctx = context.chart.ctx;
+        if (!ctx) return 'rgba(75, 192, 192, 0.2)';
+        return createGradient(ctx);
+      },
+      borderColor: 'rgb(10, 132, 255)', // A single, vibrant color for the border
+      // --- DYNAMIC LINE COLORING ---
+      segment: {
+        borderColor: (ctx: any) => {
+          const y1 = ctx.p0.parsed.y;
+          const y2 = ctx.p1.parsed.y;
+          if (y2 > y1) {
+            return '#26a69a'; // Green for upward trend
+          }
+          if (y2 < y1) {
+            return '#ef5350'; // Red for downward trend
+          }
+          return '#8D8D92'; // Grey for flat
+        }
+      },
       tension: 0.1,
+      pointRadius: 2,
+      pointHoverRadius: 6,
     }],
   };
+
   const options = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: { position: 'top' as const },
-      title: { display: true, text: 'Portfolio Value Over Time', font: { size: 18 } },
+      legend: {
+        position: 'top' as const,
+        labels: {
+          color: 'var(--foreground)',
+          font: { size: 14 }
+        }
+      },
+      title: {
+        display: true,
+        text: 'Portfolio Value Over Time',
+        color: 'var(--foreground)',
+        font: { size: 18 }
+      },
+      tooltip: {
+        mode: 'index' as const,
+        intersect: false,
+      }
     },
     scales: {
       x: {
         type: 'time' as const,
         time: { tooltipFormat: 'MMM dd, yyyy HH:mm', unit: 'minute' as const },
-        title: { display: true, text: 'Date' },
-        grid: { display: false },
+        title: {
+          display: true,
+          text: 'Date',
+          color: 'var(--foreground)'
+        },
+        grid: {
+          color: 'rgba(255, 255, 255, 0.1)'
+        },
+        ticks: {
+          color: 'var(--foreground)'
+        }
       },
       y: {
-        title: { display: true, text: 'Value ($)' },
-        ticks: { callback: (value: string | number) => '$' + value },
+        title: {
+          display: true,
+          text: 'Value ($)',
+          color: 'var(--foreground)'
+        },
+        grid: {
+          color: 'rgba(255, 255, 255, 0.1)',
+          zeroLineColor: 'rgba(255, 255, 255, 0.5)', // Make zero line more prominent
+        },
+        ticks: {
+          color: 'var(--foreground)',
+          callback: (value: string | number) => '$' + value
+        },
+        // IMPORTANT: The chart will automatically handle negative values
+        // as long as you don't set a `min: 0`. The configuration is correct
+        // by default. If you see no negative values, it's because your
+        // data source hasn't provided any yet.
       },
     },
   };
+
   return <Line options={options} data={chartData} />;
 }
+
 
 // --- MAIN PAGE COMPONENT ---
 export default function Home() {
@@ -97,7 +169,6 @@ export default function Home() {
     } catch (e) {
       console.error("Failed to parse JSON output from backend:", e);
       setError("Failed to parse the data from the AI. The output might be malformed.");
-      // Clear old data to avoid confusion
       setReasoning(''); setDecisions([]); setPortfolioSummary(null); setPortfolioPositions([]); setHistory([]);
     }
   };
@@ -119,7 +190,6 @@ export default function Home() {
     }
   };
 
-  // Helper to determine P&L color
   const getPnlClass = (pnl: string) => {
     const value = parseFloat(pnl.replace(/[^-\d.]/g, ''));
     if (value > 0) return styles.pnlPositive;
@@ -137,94 +207,109 @@ export default function Home() {
         <button onClick={handleTrade} disabled={loading} className={styles.tradeButton}>
           {loading ? 'Processing...' : 'Execute Next Trade Cycle'}
         </button>
-        {loading && <p className={styles.loadingText}>Fetching market data and thinking...</p>}
+
         {error && <div className={styles.error}><pre>Error: {error}</pre></div>}
-        {!loading && !error && (
-          <>
-            {history.length > 1 && (
+
+        {/* --- NEW DASHBOARD LAYOUT --- */}
+        <div className={styles.dashboardLayout}>
+
+          {/* --- MAIN CONTENT (GRAPH) --- */}
+          <div className={styles.mainContent}>
+            {loading && <p className={styles.loadingText}>Fetching market data and thinking...</p>}
+            {!loading && !error && history.length > 1 && (
               <div className={styles.chartContainer}>
                 <PortfolioChart data={history} />
               </div>
             )}
-
-            {portfolioSummary && Object.keys(portfolioSummary).length > 0 && (
-              <div className={styles.resultsContainer}>
-                <h2>Portfolio Summary</h2>
-                <ul className={styles.portfolioList}>
-                  {Object.entries(portfolioSummary).map(([key, value]) => (
-                    <li key={key}><strong>{key}:</strong> {value}</li>
-                  ))}
-                </ul>
+            {!loading && history.length <= 1 && (
+              <div className={styles.chartContainer} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <p>Run a trade cycle to generate portfolio history.</p>
               </div>
             )}
+          </div>
 
-            {/* NEW: Detailed Portfolio Positions Table */}
-            {portfolioPositions.length > 0 && (
-              <div className={styles.resultsContainer}>
-                <h2>Current Positions</h2>
-                <table className={styles.table}>
-                  <thead>
-                    <tr>
-                      <th>SIDE</th>
-                      <th>COIN</th>
-                      <th>LEVERAGE</th>
-                      <th>NOTIONAL</th>
-                      <th>EXIT PLAN</th>
-                      <th>UNREAL P&L</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {portfolioPositions.map((pos, index) => (
-                      <tr key={index}>
-                        <td>{pos.side}</td>
-                        <td>{pos.coin}</td>
-                        <td>{pos.leverage}</td>
-                        <td>{pos.notional}</td>
-                        <td>{pos.exit_plan}</td>
-                        <td className={getPnlClass(pos.unreal_pnl)}>{pos.unreal_pnl}</td>
-                      </tr>
+          {/* --- SIDEBAR (TABLES AND REASONING) --- */}
+          {!loading && !error && (
+            <div className={styles.sidebar}>
+              {portfolioSummary && Object.keys(portfolioSummary).length > 0 && (
+                <div className={styles.resultsContainer}>
+                  <h2>Portfolio Summary</h2>
+                  <ul className={styles.portfolioList}>
+                    {Object.entries(portfolioSummary).map(([key, value]) => (
+                      <li key={key}><strong>{key}:</strong> {value}</li>
                     ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+                  </ul>
+                </div>
+              )}
 
-            {decisions.length > 0 && (
-              <div className={styles.resultsContainer}>
-                <h2>AI Decisions for this Cycle</h2>
-                <table className={styles.table}>
-                  <thead>
-                    <tr>
-                      <th>SYMBOL</th>
-                      <th>ACTION</th>
-                      <th>CONFIDENCE</th>
-                      <th>QUANTITY</th>
-                      <th>EXIT PLAN</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {decisions.map((d, index) => (
-                      <tr key={index}>
-                        <td>{d.symbol}</td>
-                        <td>{d.action}</td>
-                        <td>{d.confidence}</td>
-                        <td>{d.quantity}</td>
-                        <td>{d.exit_plan}</td>
+              {portfolioPositions.length > 0 && (
+                <div className={styles.resultsContainer}>
+                  <h2>Current Positions</h2>
+                  <table className={styles.table}>
+                    <thead>
+                      <tr>
+                        <th>SIDE</th>
+                        <th>COIN</th>
+                        <th>LEVERAGE</th>
+                        <th>NOTIONAL</th>
+                        <th>EXIT PLAN</th>
+                        <th>UNREAL P&L</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+                    </thead>
+                    <tbody>
+                      {portfolioPositions.map((pos, index) => (
+                        <tr key={index}>
+                          <td>{pos.side}</td>
+                          <td>{pos.coin}</td>
+                          <td>{pos.leverage}</td>
+                          <td>{pos.notional}</td>
+                          <td>{pos.exit_plan}</td>
+                          <td className={getPnlClass(pos.unreal_pnl)}>{pos.unreal_pnl}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
 
-            {reasoning && (
-              <div className={styles.resultsContainer}>
-                <h2>AI's Thought Process</h2>
-                <pre className={styles.codeBlock}>{reasoning}</pre>
-              </div>
-            )}
-          </>
-        )}
+              {decisions.length > 0 && (
+                <div className={styles.resultsContainer}>
+                  <h2>AI Decisions for this Cycle</h2>
+                  <table className={styles.table}>
+                    <thead>
+                      <tr>
+                        <th>SYMBOL</th>
+                        <th>ACTION</th>
+                        <th>CONFIDENCE</th>
+                        <th>QUANTITY</th>
+                        <th>EXIT PLAN</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {decisions.map((d, index) => (
+                        <tr key={index}>
+                          <td>{d.symbol}</td>
+                          <td>{d.action}</td>
+                          <td>{d.confidence}</td>
+                          <td>{d.quantity}</td>
+                          <td>{d.exit_plan}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {reasoning && (
+                <div className={styles.resultsContainer}>
+                  <h2>AI's Thought Process</h2>
+                  <pre className={styles.codeBlock}>{reasoning}</pre>
+                </div>
+              )}
+            </div>
+          )}
+
+        </div>
       </div>
     </main>
   );

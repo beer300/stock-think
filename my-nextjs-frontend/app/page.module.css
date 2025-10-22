@@ -1,4 +1,6 @@
 /* my-nextjs-frontend/app/page.module.css */
+
+/* Keep all your existing styles from .main down to .portfolioList li strong */
 .main {
     display: flex;
     flex-direction: column;
@@ -10,11 +12,11 @@
 
 .container {
     width: 100%;
-    max-width: 900px;
+    max-width: 1400px;
+    /* Increased max-width for the new layout */
     background: var(--container-bg);
     padding: 2.5rem;
     border-radius: 16px;
-    /* Slightly larger radius for a modern feel */
     border: 1px solid var(--border-color);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
 }
@@ -30,7 +32,6 @@
 .description {
     text-align: center;
     color: #8D8D92;
-    /* A softer grey for secondary text */
     margin-bottom: 2.5rem;
     font-size: 1.1rem;
     line-height: 1.6;
@@ -42,13 +43,14 @@
     padding: 1rem;
     font-size: 1.2rem;
     font-weight: 600;
-    /* Bold font for a strong call to action */
     color: #fff;
     background-color: var(--primary-blue);
     border: none;
     border-radius: 10px;
     cursor: pointer;
     transition: background-color 0.2s ease, transform 0.2s ease;
+    margin-bottom: 1.5rem;
+    /* Added margin for spacing */
 }
 
 .tradeButton:disabled {
@@ -60,18 +62,48 @@
 .tradeButton:hover:not(:disabled) {
     background-color: var(--primary-blue-hover);
     transform: translateY(-2px);
-    /* Subtle lift effect */
 }
 
+/* --- NEW LAYOUT STYLES --- */
+.dashboardLayout {
+    display: flex;
+    flex-direction: row;
+    gap: 2.5rem;
+    /* Space between the chart and the sidebar */
+    margin-top: 2rem;
+}
+
+.mainContent {
+    flex: 3;
+    /* The chart will take up more space */
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar {
+    flex: 2;
+    /* The sidebar will take up less space */
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    /* Space between sidebar items */
+}
+
+/* --- END OF NEW LAYOUT STYLES --- */
+
 .resultsContainer {
-    margin-top: 2.5rem;
-    padding-top: 2rem;
-    border-top: 1px solid var(--border-color);
+    /* Removed margin-top and border-top to work within the new sidebar layout */
+    background-color: #2a2a2e;
+    border-radius: 12px;
+    padding: 1.5rem;
+    border: 1px solid var(--border-color);
 }
 
 .resultsContainer h2 {
     font-size: 1.5rem;
     color: var(--foreground);
+    margin-top: 0;
+    /* Reset margin */
     margin-bottom: 1rem;
     border-bottom: 2px solid var(--primary-blue);
     padding-bottom: 0.5rem;
@@ -80,14 +112,12 @@
 
 .codeBlock {
     background: #101010;
-    /* Darker background for code blocks */
     border: 1px solid var(--border-color);
     border-radius: 8px;
     padding: 1rem;
     white-space: pre-wrap;
     word-wrap: break-word;
     color: #d4d4d4;
-    /* High contrast text for code */
     font-family: var(--font-geist-mono), Menlo, monospace;
     font-size: 0.95rem;
 }
@@ -96,10 +126,11 @@
     width: 100%;
     border-collapse: collapse;
     margin-top: 1rem;
+    background-color: transparent;
+    /* Adjusted for container background */
     border: 1px solid var(--border-color);
     border-radius: 8px;
     overflow: hidden;
-    /* Ensures border-radius is respected */
 }
 
 .table th,
@@ -110,20 +141,21 @@
 }
 
 .table th {
-    background-color: #2c2c2e;
-    /* Header background for tables */
+    background-color: #38383e;
     font-weight: 600;
     color: var(--foreground);
 }
 
 .table tr:last-child td {
     border-bottom: none;
-    /* Remove border for the last row */
+}
+
+.table tbody tr:hover {
+    background-color: #3c3c40;
 }
 
 .error {
     color: #FF6B6B;
-    /* A bright, clear red for errors */
     background-color: rgba(255, 107, 107, 0.1);
     border: 1px solid #FF6B6B;
     border-radius: 8px;
@@ -141,10 +173,7 @@
 .portfolioList {
     list-style-type: none;
     padding: 0;
-    background: #2c2c2e;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    padding: 1.5rem;
+    /* Styles are now handled by .resultsContainer */
 }
 
 .portfolioList li {
@@ -160,48 +189,23 @@
 
 .portfolioList li strong {
     color: #a0a0a0;
-    /* Key is slightly dimmer than the value */
     margin-right: 1rem;
 }
 
-/* Add to the bottom of my-nextjs-frontend/app/page.module.css */
+.chartContainer {
+    height: 600px;
+    /* Taller chart for better visibility */
+    position: relative;
+    background-color: #1e1e1e;
+    border-radius: 12px;
+    padding: 1.5rem;
+    border: 1px solid var(--border-color);
+}
 
 .pnlPositive {
     color: #26a69a;
-    /* Green for profit */
 }
 
 .pnlNegative {
     color: #ef5350;
-    /* Red for loss */
-}
-
-.table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 20px;
-    background-color: #2a2a2e;
-    border-radius: 8px;
-    overflow: hidden;
-}
-
-.table th,
-.table td {
-    padding: 12px 15px;
-    text-align: left;
-    border-bottom: 1px solid #3a3a3e;
-}
-
-.table th {
-    background-color: #38383e;
-    font-weight: 600;
-    color: #e0e0e0;
-}
-
-.table tr:last-child td {
-    border-bottom: none;
-}
-
-.table tbody tr:hover {
-    background-color: #3c3c40;
 }
