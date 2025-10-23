@@ -1,4 +1,3 @@
-# python_scripts/prompt_generator.py
 import ccxt
 import pandas as pd
 import ta

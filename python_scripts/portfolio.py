@@ -1,4 +1,3 @@
-# python_scripts/portfolio.py
 import datetime
 import json
 
@@ -67,9 +66,9 @@ class SimulatedPortfolio:
 
     def buy(self, symbol, quantity, current_price):
         cost = quantity * current_price
+        symbol_base = symbol.split('/')[0] # FIX: Moved definition to outer scope
         if self.available_cash >= cost:
             self.available_cash -= cost
-            symbol_base = symbol.split('/')[0]
             if symbol_base in self.positions:
                 current_quantity = self.positions[symbol_base]['quantity']
                 new_quantity = current_quantity + quantity

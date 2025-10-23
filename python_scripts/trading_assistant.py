@@ -1,4 +1,3 @@
-# python_scripts/main.py
 import os
 import requests
 import json
