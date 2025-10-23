@@ -1,7 +1,6 @@
-// my-nextjs-frontend/app/page.tsx
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import styles from './page.module.css';
 
 // --- Import charting components ---
@@ -16,7 +15,7 @@ ChartJS.register(
   CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, TimeScale, Filler
 );
 
-// --- TYPE DEFINITIONS (remain the same) ---
+// --- TYPE DEFINITIONS ---
 interface Decision {
   symbol: string;
   action: string;
@@ -42,57 +41,61 @@ interface HistoryPoint {
 }
 
 
-// --- Reusable Chart Component (remains the same) ---
+// --- Reusable Chart Component (MODIFIED) ---
 function PortfolioChart({ data }: { data: HistoryPoint[] }) {
 
-  // Create a gradient for the chart background
+  // CORRECTED: This function now reads the CSS variable's value in JavaScript
   const createGradient = (ctx: CanvasRenderingContext2D) => {
     const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-    gradient.addColorStop(0, 'rgba(10, 132, 255, 0.4)'); // Primary blue with opacity
-    gradient.addColorStop(1, 'rgba(10, 132, 255, 0)');
+
+    // Check if running in a browser environment
+    if (typeof window !== 'undefined') {
+      const primaryBlueRgb = getComputedStyle(document.documentElement).getPropertyValue('--primary-blue-rgb').trim();
+      gradient.addColorStop(0, `rgba(${primaryBlueRgb}, 0.4)`);
+      gradient.addColorStop(1, `rgba(${primaryBlueRgb}, 0)`);
+    } else {
+      // Provide a fallback for server-side rendering or if the variable isn't found
+      gradient.addColorStop(0, 'rgba(0, 122, 255, 0.4)');
+      gradient.addColorStop(1, 'rgba(0, 122, 255, 0)');
+    }
+
     return gradient;
   };
 
-  const chartData = {
+  const chartData = useMemo(() => ({
     datasets: [{
       label: 'Portfolio Value ($)',
       data: data.map(point => ({ x: new Date(point.timestamp), y: point.value })),
       fill: true,
       backgroundColor: (context: ScriptableContext<"line">) => {
         const ctx = context.chart.ctx;
-        if (!ctx) return 'rgba(75, 192, 192, 0.2)';
+        if (!ctx) return 'rgba(75, 192, 192, 0.2)'; // Fallback
         return createGradient(ctx);
       },
-      borderColor: 'rgb(10, 132, 255)',
+      borderColor: 'var(--primary-blue)',
       segment: {
         borderColor: (ctx: any) => {
           const y1 = ctx.p0.parsed.y;
           const y2 = ctx.p1.parsed.y;
-          if (y2 > y1) {
-            return '#26a69a'; // Green for upward trend
-          }
-          if (y2 < y1) {
-            return '#ef5350'; // Red for downward trend
-          }
-          return '#8D8D92'; // Grey for flat
+          if (y2 > y1) return 'var(--success)';
+          if (y2 < y1) return 'var(--danger)';
+          return 'var(--gray-400)';
         }
       },
-      tension: 0.1,
+      tension: 0.2,
       pointRadius: 2,
       pointHoverRadius: 6,
+      pointBackgroundColor: 'var(--primary-blue)',
     }],
-  };
+  }), [data]);
 
-  const options = {
+  const options = useMemo(() => ({
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
       legend: {
         position: 'top' as const,
-        labels: {
-          color: 'var(--foreground)',
-          font: { size: 14 }
-        }
+        labels: { color: 'var(--foreground)', font: { size: 14 } }
       },
       title: {
         display: true,
@@ -103,55 +106,47 @@ function PortfolioChart({ data }: { data: HistoryPoint[] }) {
       tooltip: {
         mode: 'index' as const,
         intersect: false,
+        backgroundColor: 'var(--container-bg)',
+        titleColor: 'var(--foreground)',
+        bodyColor: 'var(--gray-400)',
+        borderColor: 'var(--border-color)',
+        borderWidth: 1,
       }
     },
     scales: {
       x: {
         type: 'time' as const,
         time: { tooltipFormat: 'MMM dd, yyyy HH:mm', unit: 'minute' as const },
-        title: {
-          display: true,
-          text: 'Date',
-          color: 'var(--foreground)'
-        },
-        grid: {
-          color: 'rgba(255, 255, 255, 0.1)'
-        },
-        ticks: {
-          color: 'var(--foreground)'
-        }
+        title: { display: true, text: 'Date', color: 'var(--foreground)' },
+        grid: { color: 'var(--border-color)' },
+        ticks: { color: 'var(--gray-400)' }
       },
       y: {
-        title: {
-          display: true,
-          text: 'Value ($)',
-          color: 'var(--foreground)'
-        },
-        grid: {
-          color: 'rgba(255, 255, 255, 0.1)',
-          zeroLineColor: 'rgba(255, 255, 255, 0.5)',
-        },
+        title: { display: true, text: 'Value ($)', color: 'var(--foreground)' },
+        grid: { color: 'var(--border-color)' },
         ticks: {
-          color: 'var(--foreground)',
-          callback: (value: string | number) => '$' + value
+          color: 'var(--gray-400)',
+          callback: (value: string | number) => '$' + Number(value).toLocaleString()
         },
       },
     },
-  };
+  }), []);
 
   return <Line options={options} data={chartData} />;
 }
 
 
-// --- MAIN PAGE COMPONENT ---
+// --- MAIN PAGE COMPONENT (No changes needed below this line) ---
 export default function Home() {
   const [reasoning, setReasoning] = useState<string>('');
   const [decisions, setDecisions] = useState<Decision[]>([]);
   const [portfolioSummary, setPortfolioSummary] = useState<PortfolioSummary | null>(null);
   const [portfolioPositions, setPortfolioPositions] = useState<Position[]>([]);
   const [history, setHistory] = useState<HistoryPoint[]>([]);
-  const [loading, setLoading] = useState<boolean>(true); // Start loading on initial page load
+  const [tradeHistory, setTradeHistory] = useState<any[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'reasoning' | 'history'>('reasoning');
 
   const parseOutput = (output: string) => {
     try {
@@ -161,6 +156,7 @@ export default function Home() {
       setPortfolioSummary(data.portfolio_summary || null);
       setPortfolioPositions(data.portfolio_positions || []);
       setHistory(data.history || []);
+      setTradeHistory(data.trade_history || []);
     } catch (e) {
       console.error("Failed to parse JSON output from backend:", e);
       setError("Failed to parse the data from the AI. The output might be malformed.");
@@ -200,129 +196,161 @@ export default function Home() {
     return '';
   };
 
+  const MemoizedPortfolioChart = useMemo(() => <PortfolioChart data={history} />, [history]);
+
+
   return (
     <main className={styles.main}>
-      <div className={styles.container}>
-        <h1 className={styles.title}>AI Trading Assistant</h1>
-        <p className={styles.description}>
-          The AI trading logic automatically runs every 4 minutes. Portfolio state and history are saved between runs.
-          {loading && <strong> (New cycle in progress...)</strong>}
-        </p>
+      <header className={styles.header}>
+        <div>
+          <h1 className={styles.title}>AI Trading Assistant</h1>
+          <p className={styles.description}>
+            AI-driven analysis and automated trade execution, refreshing every 4 minutes.
+          </p>
+        </div>
+        <div className={styles.status}>
+          {loading && <div className={styles.loadingIndicator}>Running Analysis...</div>}
+        </div>
+      </header>
 
-        {error && <div className={styles.error}><pre>Error: {error}</pre></div>}
 
-        <div className={styles.dashboardLayout}>
+      {error && <div className={styles.error}><pre>Error: {error}</pre></div>}
 
-          {/* ---vvv--- MODIFIED: MAIN CONTENT LOGIC ---vvv--- */}
-          {/* This new logic ensures the chart remains visible during subsequent loading states */}
-          <div className={styles.mainContent}>
-            <div className={styles.chartContainer}>
-              {/* Condition 1: If there is enough data for a line graph, ALWAYS show the chart. */}
-              {/* It will stay on screen even when loading is true on subsequent runs. */}
-              {history.length > 1 && (
-                <PortfolioChart data={history} />
+      <div className={styles.dashboardLayout}>
+
+        {/* --- MAIN CONTENT --- */}
+        <div className={styles.mainContent}>
+          <div className={styles.chartContainer}>
+            {history.length > 1 ? (
+              MemoizedPortfolioChart
+            ) : (
+              <div className={styles.placeholder}>
+                {loading ? <p>Running first analysis cycle...</p> : <p>Waiting for more data to generate the portfolio chart.</p>}
+              </div>
+            )}
+          </div>
+
+          {decisions.length > 0 && (
+            <div className={styles.card}>
+              <h2>AI Decisions for this Cycle</h2>
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th>SYMBOL</th>
+                    <th>ACTION</th>
+                    <th>CONFIDENCE</th>
+                    <th>QUANTITY</th>
+                    <th>EXIT PLAN</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {decisions.map((d, index) => (
+                    <tr key={index}>
+                      <td>{d.symbol}</td>
+                      <td>{d.action}</td>
+                      <td>{d.confidence}</td>
+                      <td>{d.quantity}</td>
+                      <td>{d.exit_plan}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+
+        {/* --- SIDEBAR --- */}
+        <div className={styles.sidebar}>
+          {portfolioSummary && (
+            <div className={styles.card}>
+              <h2>Portfolio Summary</h2>
+              <ul className={styles.portfolioList}>
+                {Object.entries(portfolioSummary).map(([key, value]) => (
+                  <li key={key}><span>{key.replace(/_/g, ' ')}</span> <strong>{value}</strong></li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {portfolioPositions.length > 0 && (
+            <div className={styles.card}>
+              <h2>Current Positions</h2>
+              <div className={styles.tableContainer}>
+                <table className={`${styles.table} ${styles.positionsTable}`}>
+                  <thead>
+                    <tr>
+                      <th>SIDE</th>
+                      <th>COIN</th>
+                      <th>LEVERAGE</th>
+                      <th>NOTIONAL</th>
+                      <th>EXIT PLAN</th>
+                      <th>UNREAL P&L</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {portfolioPositions.map((pos, index) => (
+                      <tr key={index}>
+                        <td data-label="SIDE">{pos.side}</td>
+                        <td data-label="COIN">{pos.coin}</td>
+                        <td data-label="LEVERAGE">{pos.leverage}</td>
+                        <td data-label="NOTIONAL">{pos.notional}</td>
+                        <td data-label="EXIT PLAN">{pos.exit_plan}</td>
+                        <td data-label="UNREAL P&L" className={getPnlClass(pos.unreal_pnl)}>{pos.unreal_pnl}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          <div className={styles.card}>
+            <div className={styles.tabHeader}>
+              <button
+                className={`${styles.tabButton} ${activeTab === 'reasoning' ? styles.activeTab : ''}`}
+                onClick={() => setActiveTab('reasoning')}
+              >
+                AI's Thought Process
+              </button>
+              <button
+                className={`${styles.tabButton} ${activeTab === 'history' ? styles.activeTab : ''}`}
+                onClick={() => setActiveTab('history')}
+              >
+                Trade History
+              </button>
+            </div>
+
+            <div className={styles.tabContent}>
+              {activeTab === 'reasoning' && (
+                <pre className={styles.codeBlock}>{reasoning || "No reasoning available for this cycle."}</pre>
               )}
 
-              {/* Condition 2: If it's the INITIAL load and we have no data, show this message. */}
-              {loading && history.length <= 1 && (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-                  <p>Running first analysis cycle...</p>
-                </div>
-              )}
-
-              {/* Condition 3: If it's NOT loading but we still don't have enough data, show this message. */}
-              {!loading && history.length <= 1 && (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-                  <p>Waiting for the next trade cycle to generate more portfolio history.</p>
+              {activeTab === 'history' && (
+                <div className={styles.tradeHistory}>
+                  {tradeHistory.length > 0 ? tradeHistory.slice().reverse().map((trade, index) => (
+                    <div key={index} className={styles.tradeHistoryItem}>
+                      <div className={styles.tradeHistoryHeader}>
+                        <span className={styles.tradeTimestamp}>{new Date(trade.timestamp).toLocaleString()}</span>
+                        <span className={styles.portfolioValue}>${trade.portfolio_value.toLocaleString()}</span>
+                      </div>
+                      <details className={styles.tradeDetails}>
+                        <summary>View Details</summary>
+                        <div className={styles.tradeDecisions}>
+                          {trade.decisions.map((decision: Decision, dIndex: number) => (
+                            <div key={dIndex} className={styles.decision}>
+                              <strong>{decision.symbol}:</strong> {decision.action} {decision.quantity} ({decision.confidence})
+                            </div>
+                          ))}
+                        </div>
+                        <pre className={styles.reasoningDetail}>{trade.reasoning}</pre>
+                      </details>
+                    </div>
+                  )) : <p>No trade history available.</p>}
                 </div>
               )}
             </div>
           </div>
-          {/* ---^^^---------------------------------------^^^--- */}
-
-
-          {/* --- SIDEBAR (TABLES AND REASONING) --- */}
-          {/* Hide sidebar during initial load for a cleaner first impression */}
-          {(!loading || history.length > 0) && !error && (
-            <div className={styles.sidebar}>
-              {portfolioSummary && Object.keys(portfolioSummary).length > 0 && (
-                <div className={styles.resultsContainer}>
-                  <h2>Portfolio Summary</h2>
-                  <ul className={styles.portfolioList}>
-                    {Object.entries(portfolioSummary).map(([key, value]) => (
-                      <li key={key}><strong>{key}:</strong> {value}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {portfolioPositions.length > 0 && (
-                <div className={styles.resultsContainer}>
-                  <h2>Current Positions</h2>
-                  <table className={styles.table}>
-                    <thead>
-                      <tr>
-                        <th>SIDE</th>
-                        <th>COIN</th>
-                        <th>LEVERAGE</th>
-                        <th>NOTIONAL</th>
-                        <th>EXIT PLAN</th>
-                        <th>UNREAL P&L</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {portfolioPositions.map((pos, index) => (
-                        <tr key={index}>
-                          <td>{pos.side}</td>
-                          <td>{pos.coin}</td>
-                          <td>{pos.leverage}</td>
-                          <td>{pos.notional}</td>
-                          <td>{pos.exit_plan}</td>
-                          <td className={getPnlClass(pos.unreal_pnl)}>{pos.unreal_pnl}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-
-              {decisions.length > 0 && (
-                <div className={styles.resultsContainer}>
-                  <h2>AI Decisions for this Cycle</h2>
-                  <table className={styles.table}>
-                    <thead>
-                      <tr>
-                        <th>SYMBOL</th>
-                        <th>ACTION</th>
-                        <th>CONFIDENCE</th>
-                        <th>QUANTITY</th>
-                        <th>EXIT PLAN</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {decisions.map((d, index) => (
-                        <tr key={index}>
-                          <td>{d.symbol}</td>
-                          <td>{d.action}</td>
-                          <td>{d.confidence}</td>
-                          <td>{d.quantity}</td>
-                          <td>{d.exit_plan}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-
-              {reasoning && (
-                <div className={styles.resultsContainer}>
-                  <h2>AI's Thought Process</h2>
-                  <pre className={styles.codeBlock}>{reasoning}</pre>
-                </div>
-              )}
-            </div>
-          )}
-
         </div>
       </div>
     </main>
