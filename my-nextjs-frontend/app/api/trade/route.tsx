@@ -6,7 +6,7 @@ export async function POST() {
     // This promise-based function to run the Python script remains the same
     const runTradingScript = (): Promise<string> => {
         return new Promise((resolve, reject) => {
-            const scriptPath = path.resolve(process.cwd(), '..', 'python_scripts', 'trading_assistant.py');
+            const scriptPath = path.resolve(process.cwd(), '..', 'python_scripts', 'main.py');
             const pythonProcess = spawn('python3', [scriptPath]);
             let stdout = '';
             let stderr = '';

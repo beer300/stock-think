@@ -301,3 +301,44 @@
     white-space: pre-wrap;
     font-family: var(--font-geist-mono);
 }
+
+/* --- Chart --- */
+.chartHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.timeWindowControls {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.timeButton,
+.activeTimeButton {
+    background-color: var(--gray-100);
+    color: var(--gray-400);
+    border: 1px solid var(--border-color);
+    padding: 0.4rem 0.8rem;
+    border-radius: var(--border-radius-md);
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.timeButton:hover {
+    background-color: var(--gray-200);
+    color: var(--foreground);
+}
+
+.activeTimeButton {
+    background-color: var(--primary-blue);
+    color: var(--foreground);
+    border-color: var(--primary-blue);
+}
+
+.chartContainer {
+    height: 500px;
+    position: relative;
+}

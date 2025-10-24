@@ -44,17 +44,14 @@ interface HistoryPoint {
 // --- Reusable Chart Component (MODIFIED) ---
 function PortfolioChart({ data }: { data: HistoryPoint[] }) {
 
-  // CORRECTED: This function now reads the CSS variable's value in JavaScript
   const createGradient = (ctx: CanvasRenderingContext2D) => {
     const gradient = ctx.createLinearGradient(0, 0, 0, 400);
 
-    // Check if running in a browser environment
     if (typeof window !== 'undefined') {
       const primaryBlueRgb = getComputedStyle(document.documentElement).getPropertyValue('--primary-blue-rgb').trim();
       gradient.addColorStop(0, `rgba(${primaryBlueRgb}, 0.4)`);
       gradient.addColorStop(1, `rgba(${primaryBlueRgb}, 0)`);
     } else {
-      // Provide a fallback for server-side rendering or if the variable isn't found
       gradient.addColorStop(0, 'rgba(0, 122, 255, 0.4)');
       gradient.addColorStop(1, 'rgba(0, 122, 255, 0)');
     }
@@ -98,10 +95,7 @@ function PortfolioChart({ data }: { data: HistoryPoint[] }) {
         labels: { color: 'var(--foreground)', font: { size: 14 } }
       },
       title: {
-        display: true,
-        text: 'Portfolio Value Over Time',
-        color: 'var(--foreground)',
-        font: { size: 18 }
+        display: false, // Title is now handled in the component's header
       },
       tooltip: {
         mode: 'index' as const,
@@ -136,7 +130,7 @@ function PortfolioChart({ data }: { data: HistoryPoint[] }) {
 }
 
 
-// --- MAIN PAGE COMPONENT (No changes needed below this line) ---
+// --- MAIN PAGE COMPONENT ---
 export default function Home() {
   const [reasoning, setReasoning] = useState<string>('');
   const [decisions, setDecisions] = useState<Decision[]>([]);
@@ -147,6 +141,7 @@ export default function Home() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'reasoning' | 'history'>('reasoning');
+  const [timeRange, setTimeRange] = useState<'all' | '72h'>('all');
 
   const parseOutput = (output: string) => {
     try {
@@ -188,7 +183,6 @@ export default function Home() {
     return () => clearInterval(intervalId);
   }, [handleTrade]);
 
-
   const getPnlClass = (pnl: string) => {
     const value = parseFloat(pnl.replace(/[^-\d.]/g, ''));
     if (value > 0) return styles.pnlPositive;
@@ -196,8 +190,15 @@ export default function Home() {
     return '';
   };
 
-  const MemoizedPortfolioChart = useMemo(() => <PortfolioChart data={history} />, [history]);
+  const filteredHistory = useMemo(() => {
+    if (timeRange === '72h') {
+      const seventyTwoHoursAgo = new Date(Date.now() - 72 * 60 * 60 * 1000);
+      return history.filter(point => new Date(point.timestamp) >= seventyTwoHoursAgo);
+    }
+    return history;
+  }, [history, timeRange]);
 
+  const MemoizedPortfolioChart = useMemo(() => <PortfolioChart data={filteredHistory} />, [filteredHistory]);
 
   return (
     <main className={styles.main}>
@@ -213,21 +214,39 @@ export default function Home() {
         </div>
       </header>
 
-
       {error && <div className={styles.error}><pre>Error: {error}</pre></div>}
 
       <div className={styles.dashboardLayout}>
 
         {/* --- MAIN CONTENT --- */}
         <div className={styles.mainContent}>
-          <div className={styles.chartContainer}>
-            {history.length > 1 ? (
-              MemoizedPortfolioChart
-            ) : (
-              <div className={styles.placeholder}>
-                {loading ? <p>Running first analysis cycle...</p> : <p>Waiting for more data to generate the portfolio chart.</p>}
+          <div className={styles.card}>
+            <div className={styles.chartHeader}>
+              <h2>Portfolio Performance</h2>
+              <div className={styles.timeWindowControls}>
+                <button
+                  onClick={() => setTimeRange('72h')}
+                  className={timeRange === '72h' ? styles.activeTimeButton : styles.timeButton}
+                >
+                  72H
+                </button>
+                <button
+                  onClick={() => setTimeRange('all')}
+                  className={timeRange === 'all' ? styles.activeTimeButton : styles.timeButton}
+                >
+                  All Time
+                </button>
               </div>
-            )}
+            </div>
+            <div className={styles.chartContainer}>
+              {filteredHistory.length > 1 ? (
+                MemoizedPortfolioChart
+              ) : (
+                <div className={styles.placeholder}>
+                  {loading ? <p>Running first analysis cycle...</p> : <p>Waiting for more data to generate the portfolio chart.</p>}
+                </div>
+              )}
+            </div>
           </div>
 
           {decisions.length > 0 && (
